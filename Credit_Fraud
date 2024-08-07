@@ -1,0 +1,94 @@
+library(ranger)
+>library(caret)
+>library(data.table)
+creditcard_data <- read.csv("/Users/kreet/Desktop/academic\ files/sem\ 4/DATA\ VISUALIZATION/project/Credit-card-dataset/creditcard.csv") > creditcard_data
+dim(creditcard_data) #Gives us the dimension of the dataset [1] 284807 31
+
+>head(creditcard_data,6) #Gives the first 6 data entries in the dataset
+ > tail(creditcard_data,6) #Gives the last 6 entries in thedataset.
+ 
+>summary(creditcard_data$Amount) #This gives us the summary of the dataset Statistically. 
+> names(creditcard_data) #Thiscommand will tell us about the names of the columns in the dataset
+ 
+>var(creditcard_data$Amount) #It gives the variance of the amount column
+
+>sd(creditcard_data$Amount) #It gives us the standard deviation in the amount column
+creditcard_data$Amount=scale(creditcard_data$Amount) This will scale our dataset.
+ > NewData=creditcard_data[,-c(1)]
+ 
+>head(NewData) #This is used in order to recheck our model after scaling
+library(caTools)
+>set.seed(123) It generates random numbers
+
+>data_sample = sample.split(NewData$Class,SplitRatio=0.80) This function is used in order to split the dataset into twodatasets in the ratio 0.8: 0.2
+ 
+>train_data = subset(NewData,data_sample==TRUE) This is used to transfer all the elements in data_sample which have avalue of data_sample = true.
+ 
+>test_data = subset(NewData,data_sample==FALSE) This is used to transfer all the elements in data_sample which have avalue of data_sample = false.
+ 
+>dim(train_data) It is used to check the dimensions of the training data. [1] 227846 30
+
+ 
+dim(test_data) It is used to heck the dimensions of the test dataset [1] 56961 30
+Logistic_Model=glm(Class~.,test_data,family=binomial()) It is used to generate a Binomial Linear Regression Model.
+
+>summary(Logistic_Model)
+
+>plot(Logistic_Model)
+Then, we have to assess the performance of our model, so we use it to delineate the ROC curve(Receiver OptimisticCharacterisitics).
+ 
+>library(pROC)
+ 
+lr.predict <- predict(Logistic_Model,test_data, probability = TRUE) This is used in order to predict more values on thebasis of the current values.
+ 
+>auc.gbm = roc(test_data$Class, lr.predict, plot = TRUE, col = "blue") It is used to build the ROC curve
+library(rpart)
+
+>library(rpart.plot)
+ 
+>decisionTree_model <- rpart(Class ~ . , creditcard_data, method = 'class')
+
+ 
+>predicted_val <- predict(decisionTree_model, creditcard_data, type = 'class')
+ 
+>probability <- predict(decisionTree_model, creditcard_data, type = 'prob')
+ 
+rpart.plot(decisionTree_model)
+library(neuralnet)
+
+>ANN_model = neuralnet (Class~., train_data, linear.output=FALSE)
+ 
+>plot(ANN_model
+predANN=compute(ANN_model, test_data) //the parameters are x=A table, and name=Name of the table on the database.
+ 
+>resultANN=predANN$net.result
+
+ 
+>resultANN=ifelse(resultANN>0.5,1,0)
+library(gbm, quietly=TRUE)
+ 
+system.time( + model_gbm <- gbm(Class ~ .
++ , distribution = "bernoulli"
++ , data = rbind(train_data, test_data)
++
+ + , n.trees = 500
++ , interaction.depth = 3
++ , n.minobsinnode = 100
++ , shrinkage = 0.01
++ , bag.fraction = 0.5
++ , train.fraction = nrow(train_data) /
++ (nrow(train_data)
+
+
++ nrow(test_data))
++ )
++ )user system elapsed 708.948 10.340 836.577
+
+>gbm.iter = gbm.perf(model_gbm, method = "test")
+>model.influence = relative.influence(model_gbm, n.trees = gbm.iter, sort. = TRUE) 
+>plot(model_gbm)
+gbm_test = predict(model_gbm, newdata = test_data, n.trees = gbm.iter)
+ 
+>gbm_auc = roc(test_data$Class, gbm_test, plot = TRUE, col = "red") Setting levels: control = 0, case = 1
+ 
+>gbm_auc Call: roc.default(response = test_data$Class, predictor = gbm_test, plot = TRUE, col= "red")Data: gbm_test in 56863 controls (test_data$Class 0) < 98 cases (test_data$Class 1). Area under the curve: 0.9552
